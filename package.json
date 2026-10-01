@@ -1,0 +1,77 @@
+{
+  "name": "launcher-arenago",
+  "version": "1.1.0",
+  "description": "Launcher de ArenaGo",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder build",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux",
+    "build:mac": "electron-builder --mac",
+    "release:win": "electron-builder --win --publish always",
+    "release:linux": "electron-builder --linux --publish always",
+    "release": "electron-builder --win --linux --publish always"
+  },
+  "build": {
+    "appId": "com.arenago.launcher",
+    "productName": "ArenaGo-Launcher",
+    "compression": "maximum",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "MainnnMP",
+        "repo": "arenago-launcher",
+        "releaseType": "release"
+      }
+    ],
+    "nsis": {
+      "deleteAppDataOnUninstall": true
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        "AppImage"
+      ],
+      "category": "Game"
+    },
+    "mac": {
+      "icon": "build/icon.icns",
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.games"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ]
+  },
+  "dependencies": {
+    "@xmcl/core": "2.15.0",
+    "adm-zip": "^0.5.10",
+    "axios": "^1.18.1",
+    "electron-updater": "^6.8.9",
+    "fs-extra": "^11.2.0",
+    "msmc": "^3.1.5"
+  },
+  "devDependencies": {
+    "electron": "^30.5.1",
+    "electron-builder": "^26.15.3"
+  }
+}

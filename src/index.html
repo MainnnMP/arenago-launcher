@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ArenaGo Launcher</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg-dark: #1a1c20; --panel-bg: #2a2d32; --primary: #E95B15; --primary-hover: #cf4f10; --text-main: #ffffff; --text-muted: #a0a4b0; --border-color: #3f434c; }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        .app-wrapper { display: flex; width: 1000px; height: 600px; border-radius: 12px; overflow: hidden; box-shadow: 0 15px 50px rgba(0,0,0,0.6); border: 1px solid var(--border-color); }
+        .sidebar { width: 260px; background-color: var(--panel-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 25px 20px; box-sizing: border-box; z-index: 10; }
+        #logo { width: 180px; margin: 0 auto 30px auto; display: block; }
+        #user-section { display: none; flex-direction: column; align-items: center; background: rgba(0,0,0,0.15); padding: 20px 15px; border-radius: 10px; border: 1px solid var(--border-color); text-align: center; }
+        #skin-render { width: 90px; height: 90px; object-fit: cover; border-radius: 12px; background: #1a1c20; margin-bottom: 12px; border: 2px solid var(--border-color); }
+        .user-info h3 { margin: 0 0 5px 0; font-size: 20px; color: white;}
+        .user-info p { margin: 0 0 12px 0; font-size: 13px; color: var(--primary); font-weight: bold;}
+        .btn-logout { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; transition: 0.2s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;}
+        .btn-logout:hover { border-color: #ff4a4a; color: #ff4a4a; background: rgba(255, 74, 74, 0.1); }
+        .spacer { flex-grow: 1; }
+        .social-bar { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .btn-social { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 12px; text-transform: uppercase; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-discord { background-color: #5865F2; } .btn-discord:hover { background-color: #4752C4; }
+        .btn-insta { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); } .btn-insta:hover { filter: brightness(1.1); }
+        .main-area { flex: 1; background-color: var(--bg-dark); display: flex; flex-direction: column; position: relative; }
+        #view-login { flex: 1; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: var(--panel-bg); padding: 40px; border-radius: 12px; width: 340px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .login-box h2 { margin-top: 0; margin-bottom: 25px; font-size: 24px; text-align: center; color: white; }
+        .input-group { margin-bottom: 20px; }
+        label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: block; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;}
+        select, input[type="text"] { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); background-color: #1e2024; color: white; box-sizing: border-box; font-size: 14px; }
+        select:focus, input[type="text"]:focus { outline: none; border-color: var(--primary); }
+        #view-dashboard { flex: 1; display: none; flex-direction: column; height: 100%; overflow: hidden; }
+        .dashboard-content { flex: 1; padding: 25px; overflow-y: auto; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; padding-bottom: 15px; }
+        .section-title { color: white; font-size: 18px; margin: 0; }
+        .btn-tuerca { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 8px; padding: 8px 15px; cursor: pointer; font-size: 14px; font-weight: bold; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .btn-tuerca:hover { background: #1e2024; color: white; border-color: var(--primary); }
+        .loading-bar-container { width: 100%; margin-bottom: 15px; }
+        .loading-shimmer { width: 100%; height: 6px; background: linear-gradient(90deg, var(--panel-bg) 0%, var(--primary) 50%, var(--panel-bg) 100%); background-size: 200% 100%; animation: shimmer 1.5s infinite linear; border-radius: 3px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .modpack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .modpack-card { background: var(--panel-bg); border: 2px solid var(--border-color); border-radius: 12px; padding: 15px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: row; align-items: center; gap: 15px; position: relative; }
+        .modpack-card img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color); flex-shrink: 0; }
+        .modpack-info { display: flex; flex-direction: column; justify-content: center; overflow: hidden; width: 100%;}
+        .modpack-card h4 { margin: 0 0 5px 0; color: white; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .modpack-card p { margin: 0; color: var(--text-muted); font-size: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .modpack-card:hover { border-color: #555; } .modpack-card.active { border-color: var(--primary); background: #352924; }
+        .modpack-status { font-size: 10px; font-weight: bold; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; width: fit-content; }
+        .status-installed { background: rgba(76, 175, 80, 0.15); color: #4CAF50; border: 1px solid #4CAF50; }
+        .status-update { background: rgba(233, 91, 21, 0.15); color: #e95b15; border: 1px solid #e95b15; }
+        .status-cloud { background: rgba(160, 164, 176, 0.1); color: var(--text-muted); border: 1px solid var(--border-color); }
+        .btn-delete-modpack { position: absolute; top: 8px; right: 8px; background: rgba(220, 39, 67, 0.9); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.2s, background 0.2s; z-index: 5;}
+        .modpack-card:hover .btn-delete-modpack { opacity: 1; } .btn-delete-modpack:hover { background: #ff4a4a; }
+        .settings-grid { display: flex; gap: 20px; align-items: flex-start; }
+        .setting-card { background: var(--panel-bg); border-radius: 12px; padding: 25px; flex: 1; border: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .setting-card h3 { margin-top: 0; margin-bottom: 20px; font-size: 18px; color: white; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .btn-folder { background: #1e2024; border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 15px; }
+        .btn-folder:hover { border-color: var(--primary); background: rgba(233, 91, 21, 0.1); }
+        .gallery-container { max-height: 190px; overflow-y: auto; padding-right: 5px; margin-bottom: 15px;}
+        .gallery-container::-webkit-scrollbar { width: 6px; } .gallery-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+        .skin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .skin-item { aspect-ratio: 1; background: #1e2024; border: 2px solid transparent; border-radius: 8px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+        .skin-item:hover { border-color: #555; } .skin-item.active { border-color: var(--primary); }
+        .skin-item img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+        .btn-delete-skin { position: absolute; top: 4px; right: 4px; background: rgba(220, 39, 67, 0.9); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.2s, background 0.2s; }
+        .skin-item:hover .btn-delete-skin { opacity: 1; } .btn-delete-skin:hover { background: #ff4a4a; }
+        .btn-upload { background-color: #1e2024; border: 1px dashed var(--border-color); color: var(--text-muted); padding: 12px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; width: 100%; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;}
+        .btn-upload:hover { border-color: var(--primary); color: white; }
+        .btn-guardar { background-color: var(--primary); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.2s; width: 100%; text-transform: uppercase; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;}
+        .btn-guardar:hover { background-color: var(--primary-hover); }
+        .ram-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .ram-value { color: var(--primary); font-weight: bold; font-size: 16px; background: #1e2024; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color);}
+        input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; margin-bottom: 20px;}
+        .action-bar { height: 100px; background: var(--panel-bg); border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; }
+        #panel-progreso { flex: 1; margin-right: 30px; display: none; }
+        #estado { font-size: 14px; color: white; font-weight: 600; margin-bottom: 8px;}
+        .progress-bar { width: 100%; height: 8px; background-color: #1a1c20; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color);}
+        .progress-fill { height: 100%; background-color: var(--primary); width: 0%; transition: width 0.3s ease; }
+        #btnJugar, #btnLogin { background-color: var(--primary); color: white; border: none; padding: 16px 40px; font-size: 18px; font-weight: 800; border-radius: 6px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 0 #b34510; transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s; }
+        #btnJugar:hover, #btnLogin:hover { background-color: var(--primary-hover); }
+        #btnJugar:active, #btnLogin:active { transform: translateY(4px); box-shadow: 0 0 0 #b34510; }
+        #btnJugar:disabled { background-color: #444; box-shadow: 0 4px 0 #222; color: #888; cursor: not-allowed;}
+        
+        /* Estilos añadidos para cuando el botón se convierte en "Cerrar" */
+        #btnJugar.btn-cerrar { background-color: #dc2743; box-shadow: 0 4px 0 #a31c31; }
+        #btnJugar.btn-cerrar:hover { background-color: #ff4a4a; }
+        #btnJugar.btn-cerrar:active { transform: translateY(4px); box-shadow: 0 0 0 #a31c31; }
+        
+        #btnLogin { width: 100%; margin-top: 10px; }
+
+        .update-card { display: none; background: rgba(233, 91, 21, 0.1); border: 1px solid var(--primary); border-radius: 10px; padding: 14px; margin-top: 20px; }
+        .update-card h4 { margin: 0 0 5px 0; font-size: 13px; color: white; display: flex; align-items: center; gap: 7px; }
+        .update-card p { margin: 0 0 12px 0; font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+        .btn-update { width: 100%; padding: 10px; border: none; border-radius: 6px; background-color: var(--primary); color: white; font-size: 11px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+        .btn-update:hover { background-color: var(--primary-hover); }
+        .btn-update:disabled { background-color: #444; color: #888; cursor: default; }
+        .update-progress { display: none; height: 6px; background-color: #1a1c20; border-radius: 3px; overflow: hidden; border: 1px solid var(--border-color); margin-top: 10px; }
+        .update-progress-fill { height: 100%; width: 0%; background-color: var(--primary); transition: width 0.3s ease; }
+        .version-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); margin-bottom: 15px; }
+        .version-row span { color: white; font-weight: bold; background: #1e2024; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color); }
+        .update-hint { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin: 12px 0 0 0; }
+    </style>
+</head>
+<body>
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <img src="imagen.png" id="logo" alt="ArenaGo Logo">
+            <div id="user-section">
+                <img id="skin-render" src="" alt="Skin Actual">
+                <div class="user-info">
+                    <h3 id="display-name">Jugador</h3>
+                    <p id="display-type">Premium</p>
+                </div>
+                <button id="btnLogout" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</button>
+            </div>
+            <div class="spacer"></div>
+            <div class="update-card" id="update-card">
+                <h4><i class="fa-solid fa-circle-arrow-up"></i> <span id="update-titulo">Nueva versión</span></h4>
+                <p id="update-detalle">Hay una versión más reciente del launcher.</p>
+                <button id="btnActualizar" class="btn-update"><i class="fa-solid fa-download"></i> Actualizar</button>
+                <div class="update-progress" id="update-progress">
+                    <div class="update-progress-fill" id="update-progress-fill"></div>
+                </div>
+            </div>
+            <div class="social-bar">
+                <button id="btnDiscord" class="btn-social btn-discord"><i class="fa-brands fa-discord"></i> Discord</button>
+                <button id="btnInsta" class="btn-social btn-insta"><i class="fa-brands fa-instagram"></i> Instagram</button>
+            </div>
+        </aside>
+        <main class="main-area">
+            <div id="view-login">
+                <div class="login-box">
+                    <h2>Bienvenido</h2>
+                    <div class="input-group">
+                        <label>Método de Acceso</label>
+                        <select id="tipoLogin">
+                            <option value="microsoft">Cuenta Premium</option>
+                            <option value="offline">Cuenta No Premium</option>
+                        </select>
+                    </div>
+                    <div class="input-group" id="grupoApodo" style="display:none;">
+                        <label>Apodo de Jugador</label>
+                        <input type="text" id="apodo" placeholder="Ej: Gonalex">
+                    </div>
+                    <button id="btnLogin">Iniciar Sesión</button>
+                </div>
+            </div>
+
+            <div id="view-dashboard">
+                <div class="dashboard-content">
+                    <div class="dashboard-header">
+                        <h3 class="section-title" id="titulo-vista">Catálogo de Modpacks</h3>
+                        <button id="btnMenuAjustes" class="btn-tuerca"><i class="fa-solid fa-gear"></i> Ajustes</button>
+                    </div>
+
+                    <div id="zona-modpacks">
+                        <div id="modpacks-container">
+                            <div class="loading-bar-container">
+                                <div class="loading-shimmer"></div>
+                            </div>
+                            <p style="color:var(--text-muted); font-size: 13px; text-align: center;">Cargando catálogo desde la nube...</p>
+                        </div>
+                    </div>
+                    
+                    <div id="zona-ajustes" style="display: none;">
+                        <div class="settings-grid">
+                            <div class="setting-card">
+                                <h3>Memoria del Sistema</h3>
+                                <div class="ram-header">
+                                    <label>Memoria RAM Asignada</label>
+                                    <span class="ram-value" id="ramText">6 GB</span>
+                                </div>
+                                <input type="range" id="ramSlider" min="2" max="16" step="1" value="6">
+                                <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-top: 10px;">
+                                    Asigna cuánta RAM utilizará el juego.
+                                </p>
+                                <button id="btnAbrirCarpeta" class="btn-folder">
+                                    <i class="fa-solid fa-folder-open"></i> Abrir Carpeta del Launcher
+                                </button>
+                            </div>
+
+                            <div class="setting-card" id="seccion-galeria" style="display: none;">
+                                <h3>Personaliza tu Skin</h3>
+                                <div class="gallery-container">
+                                    <div class="skin-grid" id="skin-grid"></div>
+                                </div>
+                                <button id="btnSubirSkin" class="btn-upload"><i class="fa-solid fa-plus"></i> Subir Nueva Skin</button>
+                                <select id="varianteSkin" style="margin-bottom: 10px;">
+                                    <option value="classic">Modelo Normal</option>
+                                    <option value="slim">Modelo Delgado</option>
+                                </select>
+                                <button id="btnGuardarSkin" class="btn-guardar"><i class="fa-solid fa-floppy-disk"></i> Guardar y Aplicar</button>
+                            </div>
+                        </div>
+
+                        <div class="setting-card" style="margin-top: 20px;">
+                            <h3>Actualizaciones</h3>
+                            <div class="version-row">Versión instalada <span id="version-actual">—</span></div>
+                            <button id="btnBuscarUpdates" class="btn-folder" style="margin-top: 0;">
+                                <i class="fa-solid fa-rotate"></i> Buscar Actualizaciones
+                            </button>
+                            <p class="update-hint" id="update-hint">El launcher busca actualizaciones automáticamente al abrirse.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <div id="panel-progreso">
+                        <div id="estado">Preparando entorno...</div>
+                        <div class="progress-bar"><div class="progress-fill" id="barra"></div></div>
+                    </div>
+                    <div style="margin-left: auto;">
+                        <button id="btnJugar" disabled>Selecciona un Modpack</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Vinculamos el JS separado -->
+    <script src="renderer.js"></script>
+</body>
+</html>
