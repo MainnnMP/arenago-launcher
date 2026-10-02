@@ -114,6 +114,18 @@ function loaderKey(deps) {
     ].filter(Boolean).join('|');
 }
 
+function looksLikeLoaderVersion(name) {
+    const n = String(name || '');
+    return n.includes('neoforge') || n.includes('fabric-loader') || n.includes('forge');
+}
+
+async function findInstalledLoaderVersion(instanceFolder) {
+    const versionsDir = path.join(instanceFolder, 'versions');
+    if (!fs.existsSync(versionsDir)) return null;
+    const subDirs = await fs.readdir(versionsDir);
+    return subDirs.find(looksLikeLoaderVersion) || null;
+}
+
 function loaderName(deps) {
     if (!deps) return null;
     if (deps['fabric-loader']) return `fabric-loader:${deps['fabric-loader']}`;
@@ -138,6 +150,12 @@ async function ensureLoader(indexJson, instanceFolder, sender) {
     }
 
     return { mcVersion, installedVersionName };
+}
+
+async function ensureLoaderFromInstance(instanceFolder, sender) {
+    const index = await readIndex(instanceFolder);
+    if (!index || !index.dependencies) return null;
+    return ensureLoader(index, instanceFolder, sender);
 }
 
 async function downloadIndexFiles(files, instanceFolder, sender, percentStart, percentSpan) {
@@ -273,6 +291,8 @@ async function installMrPack(mrpackUrl, instanceFolder, sender, options = {}) {
         const indexJson = await fs.readJson(sourceIndexPath);
 
         const { mcVersion, installedVersionName } = await ensureLoader(indexJson, instanceFolder, sender);
+        const resolvedLoader = await findInstalledLoaderVersion(instanceFolder);
+        const launchName = resolvedLoader || installedVersionName;
         await downloadIndexFiles(indexJson.files, instanceFolder, sender, 30, 45);
 
         sendProgress(sender, 80, 'Aplicando configuraciones...');
@@ -281,8 +301,8 @@ async function installMrPack(mrpackUrl, instanceFolder, sender, options = {}) {
             previousHashes: {}
         });
 
-        await finishInstall(instanceFolder, indexJson, installedVersionName, catalogVersion, overrideHashes);
-        return { mcVersion, installedVersionName, version: catalogVersion || null };
+        await finishInstall(instanceFolder, indexJson, launchName, catalogVersion, overrideHashes);
+        return { mcVersion, installedVersionName: launchName, version: catalogVersion || null };
     } finally {
         await cleanupExtract(tempZip, extractDir);
     }
@@ -310,11 +330,13 @@ async function syncMrPack(mrpackUrl, instanceFolder, sender, options = {}) {
 
         const loaderChanged = !oldIndex || loaderKey(oldIndex.dependencies) !== loaderKey(indexJson.dependencies);
         let mcVersion = indexJson.dependencies.minecraft;
-        let installedVersionName = meta.installedVersionName || mcVersion;
-        if (loaderChanged) {
-            const loader = await ensureLoader(indexJson, instanceFolder, sender);
-            mcVersion = loader.mcVersion;
-            installedVersionName = loader.installedVersionName;
+        // Siempre asegurar el loader. Si se omite, una instancia vieja (o un
+        // meta sin installedVersionName) termina lanzando vanilla.
+        const loader = await ensureLoader(indexJson, instanceFolder, sender);
+        mcVersion = loader.mcVersion;
+        let installedVersionName = loader.installedVersionName;
+        if (!loaderChanged && meta.installedVersionName && looksLikeLoaderVersion(meta.installedVersionName)) {
+            installedVersionName = meta.installedVersionName;
         }
 
         await downloadIndexFiles(indexJson.files, instanceFolder, sender, 30, 45);
@@ -324,6 +346,9 @@ async function syncMrPack(mrpackUrl, instanceFolder, sender, options = {}) {
             firstInstall: false,
             previousHashes
         });
+
+        const resolvedLoader = await findInstalledLoaderVersion(instanceFolder);
+        if (resolvedLoader) installedVersionName = resolvedLoader;
 
         await finishInstall(instanceFolder, indexJson, installedVersionName, catalogVersion, overrideHashes);
         return { mcVersion, installedVersionName, version: catalogVersion || null };
@@ -342,5 +367,7 @@ module.exports = {
     installMrPack,
     syncMrPack,
     readInstanceMeta,
-    needsSync
+    needsSync,
+    findInstalledLoaderVersion,
+    ensureLoaderFromInstance
 };

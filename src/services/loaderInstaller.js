@@ -3,6 +3,15 @@ const path = require('path');
 const { spawn } = require('child_process');
 const axios = require('axios');
 
+async function findLoaderProfile(rootDir) {
+    const versionsDir = path.join(rootDir, 'versions');
+    if (!await fs.pathExists(versionsDir)) return null;
+    const subDirs = await fs.readdir(versionsDir);
+    return subDirs.find(dir =>
+        dir.includes('neoforge') || dir.includes('fabric-loader') || dir.includes('forge')
+    ) || null;
+}
+
 async function installNeoForge(rootDir, mcVersion, loaderVersion, sender) {
     await fs.ensureDir(rootDir);
     const profilesPath = path.join(rootDir, 'launcher_profiles.json');
@@ -43,7 +52,10 @@ async function installNeoForge(rootDir, mcVersion, loaderVersion, sender) {
     } finally {
         if (await fs.pathExists(installerPath)) await fs.remove(installerPath);
     }
-    return versionName;
+    if (await fs.pathExists(jsonPath)) return versionName;
+    const found = await findLoaderProfile(rootDir);
+    if (found) return found;
+    throw new Error('NeoForge se instaló pero no apareció el perfil del loader en versions/.');
 }
 
 async function installForge(rootDir, mcVersion, loaderVersion, sender) {
@@ -86,7 +98,10 @@ async function installForge(rootDir, mcVersion, loaderVersion, sender) {
     } finally {
         if (await fs.pathExists(installerPath)) await fs.remove(installerPath);
     }
-    return versionName;
+    if (await fs.pathExists(jsonPath)) return versionName;
+    const found = await findLoaderProfile(rootDir);
+    if (found) return found;
+    throw new Error('Forge se instaló pero no apareció el perfil del loader en versions/.');
 }
 
 async function installFabric(rootDir, mcVersion, loaderVersion, sender) {

@@ -28,19 +28,22 @@ async function launchGame(config, sender) {
                 const info = await modpack.syncMrPack(config.mrpackUrl, instancePath, sender, { catalogVersion });
                 finalMcVersion = info.mcVersion;
                 versionToLaunch = info.installedVersionName;
-            } else if (meta && meta.installedVersionName) {
-                finalMcVersion = meta.mcVersion || finalMcVersion;
-                versionToLaunch = meta.installedVersionName;
-            } else {
-                const versionsDir = path.join(instancePath, 'versions');
-                if (fs.existsSync(versionsDir)) {
-                    const subDirs = await fs.readdir(versionsDir);
-                    const foundLoaderVersion = subDirs.find(dir => dir.includes('neoforge') || dir.includes('forge') || dir.includes('fabric-loader'));
-                    if (foundLoaderVersion) {
-                        versionToLaunch = foundLoaderVersion;
-                    }
-                }
+            } else if (meta && meta.mcVersion) {
+                finalMcVersion = meta.mcVersion;
+                versionToLaunch = meta.installedVersionName || finalMcVersion;
             }
+        }
+
+        let loaderOnDisk = await modpack.findInstalledLoaderVersion(instancePath);
+        if (!loaderOnDisk) {
+            const repaired = await modpack.ensureLoaderFromInstance(instancePath, sender);
+            if (repaired) {
+                finalMcVersion = repaired.mcVersion || finalMcVersion;
+                loaderOnDisk = repaired.installedVersionName;
+            }
+        }
+        if (loaderOnDisk) {
+            versionToLaunch = loaderOnDisk;
         }
 
         // 2. Asegurar cliente base de Minecraft (.jar y .json)
